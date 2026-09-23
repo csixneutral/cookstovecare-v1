@@ -23,9 +23,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -45,6 +46,12 @@
           "photosPermission": "Allow CookstoveCare to access your photos to select cookstove condition records."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a93ead7d-85b0-4722-a179-2e622e606edc"
+      }
+    },
+    "owner": "subham19"
   }
 }
