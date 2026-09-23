@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "CookstoveCare",
+    "slug": "cookstovecare",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.cookstovecare",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CookstoveCare needs camera access to take photos of cookstoves and delivery handovers.",
+        "NSPhotoLibraryUsageDescription": "CookstoveCare needs photo library access to select cookstove photos."
+      }
+    },
+    "android": {
+      "package": "com.example.cookstovecare",
+      "adaptiveIcon": {
+        "backgroundColor": "#673AB7",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow CookstoveCare to access your camera to capture cookstove conditions and delivery photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow CookstoveCare to access your photos to select cookstove condition records."
+        }
+      ]
+    ]
+  }
+}
