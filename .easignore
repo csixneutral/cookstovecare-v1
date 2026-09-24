@@ -1,5 +1,3 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # dependencies
 node_modules/
 
@@ -8,6 +6,10 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+
+# Native folders (EAS creates clean native build in cloud)
+android/
+ios/
 
 # Native
 .kotlin/
@@ -21,21 +23,13 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# Debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS
+# OS & Env
 .DS_Store
 *.pem
-
-# local env files
 .env*.local
-
-# typescript
 *.tsbuildinfo
-
-# generated native folders
-android/
-ios/
