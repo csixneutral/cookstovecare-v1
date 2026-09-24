@@ -67,6 +67,8 @@ export interface TaskDto {
   distributionImageUrl?: string | null;
   distributionComment?: string | null;
   customerSignatureUrl?: string | null;
+  collectionSignatureUrl?: string | null;
+  deliverySignatureUrl?: string | null;
   customerReview?: string | null;
   newStoveNumber?: string | null;
   newStoveImageUrl?: string | null;

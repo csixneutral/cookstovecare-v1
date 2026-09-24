@@ -56,6 +56,10 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [isDistributing, setIsDistributing] = useState(false);
   const [repairData, setRepairData] = useState<RepairDataDto | null>(null);
 
+  const isInstant = isInstantRepairTask(task);
+  const isReplacement = task?.typeOfProcess === 'REPLACEMENT';
+  const role = session?.role;
+
   const loadTask = useCallback(async () => {
     try {
       const data = await taskApi.getTaskById(taskId);
@@ -177,6 +181,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             ? returnedTempNumber.trim() || undefined
             : undefined,
         customerSignatureUrl: signatureUrl,
+        deliverySignatureUrl: signatureUrl,
       });
 
       if (isInstant) {
@@ -185,6 +190,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           deliveredAt: Date.now(),
           deliveryImageUrl: distUrl,
           customerSignatureUrl: signatureUrl,
+          deliverySignatureUrl: signatureUrl,
           customerReview: customerReview.trim() || undefined,
         });
       }
@@ -203,9 +209,6 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     return <LoadingSpinner message="Loading task details..." />;
   }
 
-  const isInstant = isInstantRepairTask(task);
-  const isReplacement = task.typeOfProcess === 'REPLACEMENT';
-  const role = session?.role;
   const cleanAddress = task.deliveryAddress
     ? task.deliveryAddress.replace(/\s*\[INSTANT_REPAIR\]/g, '').trim()
     : '';
@@ -450,6 +453,48 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         ) : null}
 
+        {/* Collection & Pickup Proof Card */}
+        {(task.receivedProductImageUrl || task.collectionSignatureUrl || (task.customerSignatureUrl && task.status !== TaskStatus.DISTRIBUTED)) ? (
+          <View style={styles.card}>
+            <Text style={styles.cardHeaderTitle}>Collection & Pickup Verification</Text>
+            {task.receivedProductImageUrl ? (
+              <TouchableOpacity
+                activeOpacity={0.88}
+                onPress={() => setPreviewImageUrl(task.receivedProductImageUrl || null)}
+                style={{ marginVertical: 8 }}
+              >
+                <View style={styles.proofHeaderRow}>
+                  <Text style={styles.sublabel}>Received Cookstove Photo:</Text>
+                  <Text style={styles.tapToOpenText}>Tap to open</Text>
+                </View>
+                <Image
+                  source={{ uri: task.receivedProductImageUrl }}
+                  style={styles.deliveryProofImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ) : null}
+
+            {(task.collectionSignatureUrl || (task.customerSignatureUrl && task.status !== TaskStatus.DISTRIBUTED)) ? (
+              <TouchableOpacity
+                activeOpacity={0.88}
+                onPress={() => setPreviewImageUrl(task.collectionSignatureUrl || task.customerSignatureUrl || null)}
+                style={{ marginTop: 8 }}
+              >
+                <View style={styles.proofHeaderRow}>
+                  <Text style={styles.sublabel}>Beneficiary Collection Signature:</Text>
+                  <Text style={styles.tapToOpenText}>Tap to open</Text>
+                </View>
+                <Image
+                  source={{ uri: (task.collectionSignatureUrl || task.customerSignatureUrl)! }}
+                  style={styles.signatureImage}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
+
         {/* Delivery Proof Card (if DISTRIBUTED) */}
         {task.status === TaskStatus.DISTRIBUTED ? (
           <View style={styles.card}>
@@ -488,18 +533,18 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               </View>
             ) : null}
 
-            {task.customerSignatureUrl ? (
+            {(task.deliverySignatureUrl || task.customerSignatureUrl) ? (
               <TouchableOpacity
                 activeOpacity={0.88}
-                onPress={() => setPreviewImageUrl(task.customerSignatureUrl || null)}
+                onPress={() => setPreviewImageUrl(task.deliverySignatureUrl || task.customerSignatureUrl || null)}
                 style={{ marginTop: 8 }}
               >
                 <View style={styles.proofHeaderRow}>
-                  <Text style={styles.sublabel}>Customer Signature:</Text>
+                  <Text style={styles.sublabel}>Beneficiary Delivery Signature:</Text>
                   <Text style={styles.tapToOpenText}>Tap to open</Text>
                 </View>
                 <Image
-                  source={{ uri: task.customerSignatureUrl }}
+                  source={{ uri: (task.deliverySignatureUrl || task.customerSignatureUrl)! }}
                   style={styles.signatureImage}
                   resizeMode="contain"
                 />

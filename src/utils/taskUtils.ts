@@ -10,6 +10,8 @@ export interface InstantTaskOverride {
   deliveredAt?: number;
   deliveryImageUrl?: string;
   customerSignatureUrl?: string;
+  collectionSignatureUrl?: string;
+  deliverySignatureUrl?: string;
   customerReview?: string;
 }
 
@@ -23,15 +25,14 @@ const memoryCache: Record<number, InstantTaskOverride> = {};
  */
 export const isInstantRepairTask = (task?: TaskDto | null): boolean => {
   if (!task) return false;
-  return (
+  return Boolean(
     task.temporaryCookstoveNumber === 'INSTANT_REPAIR' ||
     task.temporaryCookstoveNumber === 'ON_FIELD_REPAIR' ||
     task.interimCookstoveUsed === 'INSTANT_REPAIR' ||
     task.distributionComment?.toLowerCase().includes('instant') ||
     task.distributionComment?.toLowerCase().includes('on-field') ||
     task.deliveryAddress?.includes('[INSTANT_REPAIR]') ||
-    task.deliveryAddress?.toLowerCase().includes('instant repair') ||
-    task.id === 23
+    task.deliveryAddress?.toLowerCase().includes('instant repair')
   );
 };
 
@@ -72,10 +73,21 @@ export const saveInstantTaskOverride = async (
 export const applyInstantTaskOverride = (task: TaskDto): TaskDto => {
   if (!isInstantRepairTask(task)) return task;
   const cached = memoryCache[task.id];
-  if (!cached) return task;
+
+  const collectionDateStr = task.collectionDate
+    ? (typeof task.collectionDate === 'number' ? new Date(task.collectionDate > 2000000000 ? task.collectionDate : task.collectionDate * 1000).toISOString() : String(task.collectionDate))
+    : undefined;
+
+  const baseTask: TaskDto = {
+    ...task,
+    assignedAt: task.assignedAt || collectionDateStr,
+    workStartedAt: task.workStartedAt || collectionDateStr,
+  };
+
+  if (!cached) return baseTask;
 
   return {
-    ...task,
+    ...baseTask,
     status: (cached.status as TaskStatus) || task.status,
     completedAt: cached.repairedAt
       ? new Date(cached.repairedAt).toISOString()
@@ -84,6 +96,10 @@ export const applyInstantTaskOverride = (task: TaskDto): TaskDto => {
     distributionImageUrl: cached.deliveryImageUrl || task.distributionImageUrl,
     customerSignatureUrl:
       cached.customerSignatureUrl || task.customerSignatureUrl,
+    collectionSignatureUrl:
+      cached.collectionSignatureUrl || task.collectionSignatureUrl || task.customerSignatureUrl,
+    deliverySignatureUrl:
+      cached.deliverySignatureUrl || task.deliverySignatureUrl || cached.customerSignatureUrl,
     customerReview: cached.customerReview || task.customerReview,
   };
 };

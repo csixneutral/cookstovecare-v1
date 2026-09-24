@@ -63,7 +63,7 @@ export const coordinatorApi = {
 
       const [officersRes, tasksRes] = await Promise.all([
         apiClient.get<any>(url),
-        apiClient.get<any>('/tasks/list.php?limit=100').catch(() => null),
+        apiClient.get<any>('/tasks/list.php?limit=1000').catch(() => null),
       ]);
 
       if (officersRes.data.success && Array.isArray(officersRes.data.field_officers)) {
@@ -143,7 +143,7 @@ export const coordinatorApi = {
     let tasks: TaskDto[] = [];
     try {
       const taskListRes = await apiClient.get<any>(
-        `/tasks/list.php?field_officer_id=${officer.id}&limit=100`
+        `/tasks/list.php?field_officer_id=${officer.id}&limit=1000`
       );
       if (taskListRes.data.success && Array.isArray(taskListRes.data.tasks)) {
         tasks = taskListRes.data.tasks.map(mapTaskDto);

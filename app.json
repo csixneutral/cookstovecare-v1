@@ -15,7 +15,7 @@
       }
     },
     "android": {
-      "package": "com.example.cookstovecare",
+      "package": "com.meensou.cookstovecare",
       "adaptiveIcon": {
         "backgroundColor": "#673AB7",
         "foregroundImage": "./assets/android-icon-foreground.png",

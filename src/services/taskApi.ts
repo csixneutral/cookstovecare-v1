@@ -59,6 +59,8 @@ export const mapTaskDto = (raw: any): TaskDto => {
     distributionImageUrl: raw.distribution_image_url || raw.distributionImageUrl || null,
     distributionComment: raw.distribution_comment || raw.distributionComment || null,
     customerSignatureUrl: raw.customer_signature_url || raw.customerSignatureUrl || null,
+    collectionSignatureUrl: raw.collection_signature_url || raw.collectionSignatureUrl || raw.customer_signature_url || raw.customerSignatureUrl || null,
+    deliverySignatureUrl: raw.delivery_signature_url || raw.deliverySignatureUrl || null,
     customerReview: raw.customer_review || raw.customerReview || null,
     newStoveNumber: raw.new_stove_number || raw.newStoveNumber || null,
     newStoveImageUrl: raw.new_stove_image_url || raw.newStoveImageUrl || null,
@@ -111,11 +113,13 @@ export const taskApi = {
     receivedProductImageUrl?: string;
     temporaryCookstoveNumber?: string;
     customerSignatureUrl?: string;
+    collectionSignatureUrl?: string;
     isInstantRepair?: boolean;
     createdByFieldOfficerId?: number;
     fieldOfficerName?: string;
     fieldOfficerPhone?: string;
   }): Promise<TaskDto> => {
+    const signatureUrl = payload.collectionSignatureUrl || payload.customerSignatureUrl;
     const body = {
       cookstove_number: payload.cookstoveNumber,
       customer_name: payload.customerName,
@@ -125,7 +129,8 @@ export const taskApi = {
       collection_date: payload.collectionDate,
       received_product_image_url: payload.receivedProductImageUrl,
       temporary_cookstove_number: payload.temporaryCookstoveNumber,
-      customer_signature_url: payload.customerSignatureUrl,
+      customer_signature_url: signatureUrl,
+      collection_signature_url: signatureUrl,
       is_instant_repair: payload.isInstantRepair ? 1 : 0,
       field_officer_id: payload.createdByFieldOfficerId,
       created_by_field_officer_id: payload.createdByFieldOfficerId,
@@ -178,7 +183,9 @@ export const taskApi = {
     interimCookstoveUsed?: string;
     interimDaysUsed?: number;
     customerSignatureUrl?: string;
+    deliverySignatureUrl?: string;
   }): Promise<TaskDto> => {
+    const signatureUrl = payload.deliverySignatureUrl || payload.customerSignatureUrl;
     const body = {
       task_id: payload.taskId,
       field_officer_id: payload.fieldOfficerId,
@@ -190,7 +197,8 @@ export const taskApi = {
       returned_temp_cookstove_number: payload.returnedTempCookstoveNumber,
       interim_cookstove_used: payload.interimCookstoveUsed,
       interim_days_used: payload.interimDaysUsed,
-      customer_signature_url: payload.customerSignatureUrl,
+      customer_signature_url: signatureUrl,
+      delivery_signature_url: signatureUrl,
     };
 
     const response = await apiClient.post<TasksApiResponse>('/tasks/distribute.php', body);

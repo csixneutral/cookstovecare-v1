@@ -232,6 +232,7 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
           ? 'INSTANT_REPAIR'
           : (!isInstantRepair && assignTempStove ? tempStoveNumber.trim() : undefined),
         customerSignatureUrl: uploadedSignatureUrl,
+        collectionSignatureUrl: uploadedSignatureUrl,
         isInstantRepair: isInstant,
         createdByFieldOfficerId: officerId,
         fieldOfficerName: officerName,

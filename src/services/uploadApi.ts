@@ -93,7 +93,14 @@ export const uploadApi = {
       try {
         data = JSON.parse(response.body);
       } catch {
+        if (response.status !== 200) {
+          throw new Error(`Upload server error (HTTP ${response.status})`);
+        }
         throw new Error(`Upload server responded with non-JSON: ${response.body.slice(0, 100)}`);
+      }
+
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(data.error || data.message || `Upload failed with status ${response.status}`);
       }
 
       if (!data.success || !data.url) {

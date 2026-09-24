@@ -22,14 +22,11 @@ export const Routes = {
   // Task Flow Screens
   TASK_DETAIL: 'TaskDetail',
   CREATE_TASK: 'CreateTask',
-  EDIT_TASK: 'EditTask',
   ASSIGN_TASK: 'AssignTask',
   REPAIR_FORM: 'RepairForm',
   REPLACEMENT_FORM: 'ReplacementForm',
-  ADD_RETURN_FORM: 'AddReturnForm',
 
   // Supervisor Management Screens
-  SUPERVISOR_TASK_LIST: 'SupervisorTaskList',
   TECHNICIANS_LIST: 'TechniciansList',
   TECHNICIAN_DETAIL: 'TechnicianDetail',
   CREATE_TECHNICIAN: 'CreateTechnician',
@@ -52,12 +49,9 @@ export type RootStackParamList = {
   [Routes.COORDINATOR_TABS]: undefined;
   [Routes.TASK_DETAIL]: { taskId: number };
   [Routes.CREATE_TASK]: { prefillFieldOfficerId?: number } | undefined;
-  [Routes.EDIT_TASK]: { taskId: number };
   [Routes.ASSIGN_TASK]: { taskId: number };
   [Routes.REPAIR_FORM]: { taskId: number };
   [Routes.REPLACEMENT_FORM]: { taskId: number };
-  [Routes.ADD_RETURN_FORM]: { taskId: number };
-  [Routes.SUPERVISOR_TASK_LIST]: { initialStatus?: string; technicianId?: number } | undefined;
   [Routes.TECHNICIANS_LIST]: undefined;
   [Routes.TECHNICIAN_DETAIL]: { technicianId: number };
   [Routes.CREATE_TECHNICIAN]: undefined;
