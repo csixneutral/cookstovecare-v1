@@ -5,8 +5,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CoordinatorHomeScreen } from '../screens/coordinator/CoordinatorHomeScreen';
 import { CoordinatorOfficersScreen } from '../screens/coordinator/CoordinatorOfficersScreen';
-import { CoordinatorDashboard } from '../screens/coordinator/CoordinatorDashboard';
-import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { CenterFabButton } from '../components/navigation/CenterFabButton';
 import { Colors } from '../constants/theme';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -41,19 +39,7 @@ export const CoordinatorTabs: React.FC = () => {
         }}
       />
 
-      {/* 2. Field Officers Tab */}
-      <Tab.Screen
-        name="CoordinatorOfficers"
-        component={CoordinatorOfficersScreen}
-        options={{
-          tabBarLabel: 'Officers',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="people" size={26} color={color} />
-          ),
-        }}
-      />
-
-      {/* 3. Center FAB: Create New Order (Style #06) */}
+      {/* 2. Center FAB: Create New Order (in the middle) */}
       <Tab.Screen
         name="CoordinatorCreateOrder"
         component={DummyCenterScreen}
@@ -74,26 +60,14 @@ export const CoordinatorTabs: React.FC = () => {
         }}
       />
 
-      {/* 4. Overview / Dashboard Tab */}
+      {/* 3. Field Officers Tab */}
       <Tab.Screen
-        name="CoordinatorOverview"
-        component={CoordinatorDashboard}
+        name="CoordinatorOfficers"
+        component={CoordinatorOfficersScreen}
         options={{
-          tabBarLabel: 'Overview',
+          tabBarLabel: 'Officers',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="dashboard" size={25} color={color} />
-          ),
-        }}
-      />
-
-      {/* 5. Profile Tab */}
-      <Tab.Screen
-        name="CoordinatorProfile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="person" size={26} color={color} />
+            <MaterialIcons name="people" size={26} color={color} />
           ),
         }}
       />

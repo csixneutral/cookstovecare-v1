@@ -49,7 +49,10 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Header title="My Profile" />
+      <Header
+        title="My Profile"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Profile Card */}

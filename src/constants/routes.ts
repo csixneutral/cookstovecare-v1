@@ -57,5 +57,6 @@ export type RootStackParamList = {
   [Routes.CREATE_TECHNICIAN]: undefined;
   [Routes.EDIT_TECHNICIAN]: { technicianId: number };
   [Routes.FIELD_OFFICER_DETAIL]: { officerPhone: string };
+  [Routes.PROFILE]: undefined;
   [Routes.EDIT_PROFILE]: undefined;
 };

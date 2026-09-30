@@ -100,12 +100,18 @@ export const CoordinatorOfficersScreen: React.FC = () => {
     <View style={styles.container}>
       <Header
         title="Field Officers"
-        subtitle={`${officers.length} registered officers`}
-        rightAction={{
-          icon: 'refresh',
-          onPress: onRefresh,
-          color: Colors.primary,
-        }}
+        rightActions={[
+          {
+            icon: 'refresh',
+            onPress: onRefresh,
+            color: Colors.primary,
+          },
+          {
+            icon: 'account-circle',
+            onPress: () => navigation.navigate(Routes.PROFILE),
+            color: Colors.primary,
+          },
+        ]}
       />
 
       <SearchBar
@@ -134,15 +140,6 @@ export const CoordinatorOfficersScreen: React.FC = () => {
           />
         }
       />
-
-      {/* FAB to create order on behalf of field officers */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.85}
-        onPress={() => navigation.navigate(Routes.CREATE_TASK)}
-      >
-        <MaterialIcons name="add" size={28} color={Colors.textWhite} />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -188,17 +185,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 2,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 20,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.lg,
   },
 });

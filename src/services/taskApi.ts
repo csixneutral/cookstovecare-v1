@@ -114,7 +114,6 @@ export const taskApi = {
     temporaryCookstoveNumber?: string;
     customerSignatureUrl?: string;
     collectionSignatureUrl?: string;
-    isInstantRepair?: boolean;
     createdByFieldOfficerId?: number;
     fieldOfficerName?: string;
     fieldOfficerPhone?: string;
@@ -131,7 +130,6 @@ export const taskApi = {
       temporary_cookstove_number: payload.temporaryCookstoveNumber,
       customer_signature_url: signatureUrl,
       collection_signature_url: signatureUrl,
-      is_instant_repair: payload.isInstantRepair ? 1 : 0,
       field_officer_id: payload.createdByFieldOfficerId,
       created_by_field_officer_id: payload.createdByFieldOfficerId,
       field_officer_name: payload.fieldOfficerName,

@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Shadows } from '../../constants/theme';
 import { Header } from '../../components/common/Header';
 import { supervisorApi } from '../../services/supervisorApi';
@@ -27,6 +28,8 @@ const SKILL_OPTIONS = [
 export const CreateTechnicianScreen: React.FC<Props> = ({ navigation }) => {
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [skillType, setSkillType] = useState<TechnicianSkillType>(TechnicianSkillType.BOTH);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,6 +42,14 @@ export const CreateTechnicianScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Required', 'Please enter technician mobile number');
       return;
     }
+    if (!password.trim()) {
+      Alert.alert('Required', 'Please enter a login password for the technician');
+      return;
+    }
+    if (password.trim().length < 6) {
+      Alert.alert('Invalid Password', 'Password must be at least 6 characters long');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -46,6 +57,7 @@ export const CreateTechnicianScreen: React.FC<Props> = ({ navigation }) => {
         name: name.trim(),
         phoneNumber: phoneNumber.trim(),
         skillType: skillType,
+        password: password.trim(),
       });
 
       Alert.alert('Success', 'Technician registered successfully!', [
@@ -82,6 +94,30 @@ export const CreateTechnicianScreen: React.FC<Props> = ({ navigation }) => {
             value={phoneNumber}
             onChangeText={setPhoneNumber}
           />
+
+          <Text style={styles.inputLabel}>Login Password *</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Create login password (min 6 chars)"
+              placeholderTextColor={Colors.textMuted}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              style={styles.passwordVisibilityToggle}
+              onPress={() => setShowPassword(!showPassword)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialIcons
+                name={showPassword ? 'visibility' : 'visibility-off'}
+                size={20}
+                color={Colors.textMuted}
+              />
+            </TouchableOpacity>
+          </View>
 
           <Text style={[styles.inputLabel, { marginTop: 14 }]}>Specialization / Skill *</Text>
           <View style={styles.skillList}>
@@ -155,6 +191,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: Colors.surfaceSecondary,
     color: Colors.textPrimary,
+  },
+  passwordContainer: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingRight: 44,
+    fontSize: 14,
+    backgroundColor: Colors.surfaceSecondary,
+    color: Colors.textPrimary,
+  },
+  passwordVisibilityToggle: {
+    position: 'absolute',
+    right: 12,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   skillList: {
     gap: 8,

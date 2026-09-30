@@ -25,7 +25,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, Routes } from '../../constants/routes';
-import { preloadInstantTaskOverrides } from '../../utils/taskUtils';
 
 type StatusFilter = 'ALL' | 'IN_PROGRESS' | 'READY' | 'DELIVERED' | 'COLLECTED' | 'ASSIGNED';
 type ProcessFilter = 'ALL' | 'REPAIRING' | 'REPLACEMENT';
@@ -165,8 +164,7 @@ export const CoordinatorHomeScreen: React.FC = () => {
         });
       }
 
-      const resolvedTasks = await preloadInstantTaskOverrides(scopedTasks);
-      setTasks(resolvedTasks);
+      setTasks(scopedTasks);
     } catch (e) {
       console.warn('Failed to load coordinator home data', e);
     } finally {
@@ -402,11 +400,18 @@ export const CoordinatorHomeScreen: React.FC = () => {
       <Header
         title="Coordinator Dashboard"
         subtitle={`Welcome, ${session?.name || 'Coordinator'}`}
-        rightAction={{
-          icon: 'refresh',
-          onPress: onRefresh,
-          color: Colors.primary,
-        }}
+        rightActions={[
+          {
+            icon: 'refresh',
+            onPress: onRefresh,
+            color: Colors.primary,
+          },
+          {
+            icon: 'account-circle',
+            onPress: () => navigation.navigate(Routes.PROFILE),
+            color: Colors.primary,
+          },
+        ]}
       />
 
       {/* Top Search Bar + Filter Button in a Single Row */}
@@ -463,12 +468,7 @@ export const CoordinatorHomeScreen: React.FC = () => {
           <View>
             {/* Section Header with Active Filter Tags */}
             <View style={styles.sectionHeaderRow}>
-              <View style={styles.titleWithCount}>
-                <Text style={styles.sectionTitle}>Orders</Text>
-                <View style={styles.countBadge}>
-                  <Text style={styles.countBadgeText}>{filteredTasks.length}</Text>
-                </View>
-              </View>
+              <Text style={styles.sectionTitle}>Orders</Text>
 
               {isFiltered && (
                 <TouchableOpacity onPress={resetFilters} style={styles.clearFiltersBtn}>
@@ -996,26 +996,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
   },
-  titleWithCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: Colors.textPrimary,
-  },
-  countBadge: {
-    backgroundColor: `${Colors.primary}18`,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  countBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primary,
   },
   clearFiltersBtn: {
     flexDirection: 'row',

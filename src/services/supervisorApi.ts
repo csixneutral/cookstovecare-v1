@@ -72,11 +72,13 @@ export const supervisorApi = {
     name: string;
     phoneNumber: string;
     skillType: string;
+    password?: string;
   }): Promise<TechnicianDto> => {
     const response = await apiClient.post<any>('/technicians/create.php', {
       name: payload.name,
       phone_number: payload.phoneNumber,
       skill_type: payload.skillType,
+      password: payload.password,
     });
     if (!response.data.success || !response.data.technician) {
       throw new Error(response.data.error || 'Failed to create technician');

@@ -47,7 +47,6 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
     district?: boolean;
   }>({});
   const [typeOfProcess, setTypeOfProcess] = useState<'REPAIRING' | 'REPLACEMENT'>('REPAIRING');
-  const [isInstantRepair, setIsInstantRepair] = useState(false);
   const [receivedImageUri, setReceivedImageUri] = useState<string | null>(null);
 
   // Temporary stove toggle
@@ -174,7 +173,7 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
       return;
     }
 
-    if (!isInstantRepair && assignTempStove && !tempStoveNumber.trim()) {
+    if (assignTempStove && !tempStoveNumber.trim()) {
       Alert.alert('Required', 'Please enter the temporary cookstove number');
       return;
     }
@@ -214,26 +213,19 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
         ? (assignedOfficer?.phoneNumber || undefined)
         : session?.phoneNumber;
 
-      const isInstant = isInstantRepair;
       const fullAddress = [deliveryAddress, village, district].filter(Boolean).join(', ');
-      const addressWithTag = isInstant
-        ? (fullAddress ? `${fullAddress} [INSTANT_REPAIR]` : '[INSTANT_REPAIR]')
-        : (fullAddress || undefined);
 
       await taskApi.createTask({
         cookstoveNumber: cookstoveNumber.trim(),
         customerName: customerName.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
-        deliveryAddress: addressWithTag,
+        deliveryAddress: fullAddress || undefined,
         typeOfProcess: typeOfProcess,
         collectionDate: Date.now(),
         receivedProductImageUrl: uploadedImageUrl,
-        temporaryCookstoveNumber: isInstant
-          ? 'INSTANT_REPAIR'
-          : (!isInstantRepair && assignTempStove ? tempStoveNumber.trim() : undefined),
+        temporaryCookstoveNumber: assignTempStove ? tempStoveNumber.trim() : undefined,
         customerSignatureUrl: uploadedSignatureUrl,
         collectionSignatureUrl: uploadedSignatureUrl,
-        isInstantRepair: isInstant,
         createdByFieldOfficerId: officerId,
         fieldOfficerName: officerName,
         fieldOfficerPhone: officerPhone,
@@ -293,7 +285,6 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
               ]}
               onPress={() => {
                 setTypeOfProcess('REPLACEMENT');
-                setIsInstantRepair(false);
               }}
             >
               <MaterialIcons
@@ -311,66 +302,6 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* Instant / On-Field Repair Checkbox Option */}
-          {typeOfProcess === 'REPAIRING' && (
-            <TouchableOpacity
-              style={[
-                styles.instantRepairOption,
-                isInstantRepair && styles.instantRepairOptionActive,
-              ]}
-              activeOpacity={0.7}
-              onPress={() => {
-                const nextState = !isInstantRepair;
-                setIsInstantRepair(nextState);
-                if (nextState) {
-                  setAssignTempStove(false);
-                  setTempStoveNumber('');
-                }
-              }}
-            >
-              <View style={[styles.checkbox, isInstantRepair && styles.checkboxChecked]}>
-                {isInstantRepair && (
-                  <MaterialIcons name="check" size={16} color={Colors.textWhite} />
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.instantRepairHeader}>
-                  <Text
-                    style={[
-                      styles.instantRepairTitle,
-                      isInstantRepair && styles.instantRepairTitleActive,
-                    ]}
-                  >
-                    Instant / On-Field Repair
-                  </Text>
-                  <View
-                    style={[
-                      styles.instantRepairBadge,
-                      isInstantRepair && styles.instantRepairBadgeActive,
-                    ]}
-                  >
-                    <MaterialIcons
-                      name="bolt"
-                      size={14}
-                      color={isInstantRepair ? Colors.primary : Colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.instantRepairBadgeText,
-                        isInstantRepair && styles.instantRepairBadgeTextActive,
-                      ]}
-                    >
-                      On-Site
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.instantRepairSubtitle}>
-                  Cookstove is repaired directly on the spot. No temporary replacement needed.
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Cookstove Barcode & Lookup */}
@@ -624,39 +555,37 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         )}
 
-        {/* Temporary Cookstove Option (Hidden when Instant / On-Field Repair is selected) */}
-        {!isInstantRepair && (
-          <View style={styles.card}>
-            <View style={styles.switchRow}>
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={styles.switchTitle}>Assign Temporary Cookstove</Text>
-                <Text style={styles.switchSubtitle}>
-                  Provide a temporary replacement stove to the customer while repair is underway
-                </Text>
-              </View>
-              <Switch
-                value={assignTempStove}
-                onValueChange={setAssignTempStove}
-                trackColor={{ false: Colors.border, true: Colors.primaryLight }}
-                thumbColor={assignTempStove ? Colors.primary : '#f4f3f4'}
+        {/* Temporary Cookstove Option */}
+        <View style={styles.card}>
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={styles.switchTitle}>Assign Temporary Cookstove</Text>
+              <Text style={styles.switchSubtitle}>
+                Provide a temporary replacement stove to the customer while repair is underway
+              </Text>
+            </View>
+            <Switch
+              value={assignTempStove}
+              onValueChange={setAssignTempStove}
+              trackColor={{ false: Colors.border, true: Colors.primaryLight }}
+              thumbColor={assignTempStove ? Colors.primary : '#f4f3f4'}
+            />
+          </View>
+
+          {assignTempStove && (
+            <View style={{ marginTop: 14 }}>
+              <Text style={styles.inputLabel}>Temporary Cookstove Barcode *</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter temporary stove barcode"
+                placeholderTextColor={Colors.textMuted}
+                value={tempStoveNumber}
+                onChangeText={setTempStoveNumber}
+                autoCapitalize="characters"
               />
             </View>
-
-            {assignTempStove && (
-              <View style={{ marginTop: 14 }}>
-                <Text style={styles.inputLabel}>Temporary Cookstove Barcode *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Enter temporary stove barcode"
-                  placeholderTextColor={Colors.textMuted}
-                  value={tempStoveNumber}
-                  onChangeText={setTempStoveNumber}
-                  autoCapitalize="characters"
-                />
-              </View>
-            )}
-          </View>
-        )}
+          )}
+        </View>
 
         {/* Received Cookstove Image */}
         <View style={styles.card}>
@@ -671,17 +600,7 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
 
         {/* Acknowledgement & Customer Signature */}
         <View style={styles.card}>
-          <View style={styles.sectionHeaderBetween}>
-            <Text style={[styles.sectionTitle, { marginBottom: 0, flex: 1 }]} numberOfLines={1}>
-              Acknowledgement
-            </Text>
-            {isInstantRepair && (
-              <View style={styles.onFieldBadge}>
-                <MaterialIcons name="verified" size={13} color={Colors.success} />
-                <Text style={styles.onFieldBadgeText}>On-Field Repair</Text>
-              </View>
-            )}
-          </View>
+          <Text style={styles.sectionTitle}>Acknowledgement</Text>
 
           {/* Acknowledgement Checkbox */}
           <TouchableOpacity
@@ -695,9 +614,7 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
               )}
             </View>
             <Text style={styles.acknowledgementText}>
-              {isInstantRepair
-                ? 'I hereby confirm that my cookstove has been inspected and repaired on-field / on-site and returned to me in proper working condition, with no temporary cookstove required.'
-                : 'I hereby confirm that I have received a temporary cookstove provided as a replacement for my previous cookstove, which will remain in use until the original cookstove is repaired or replaced.'}
+              I hereby confirm that I have received a temporary cookstove provided as a replacement for my previous cookstove, which will remain in use until the original cookstove is repaired or replaced.
             </Text>
           </TouchableOpacity>
 
@@ -957,74 +874,6 @@ const styles = StyleSheet.create({
   },
   processTypeTextActive: {
     color: Colors.textWhite,
-  },
-  instantRepairOption: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: Colors.surfaceSecondary,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-  },
-  instantRepairOptionActive: {
-    backgroundColor: `${Colors.primary}0B`,
-    borderColor: Colors.primary,
-  },
-  instantRepairHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  instantRepairTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  instantRepairTitleActive: {
-    color: Colors.primary,
-  },
-  instantRepairBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  instantRepairBadgeActive: {
-    backgroundColor: `${Colors.primary}15`,
-  },
-  instantRepairBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  instantRepairBadgeTextActive: {
-    color: Colors.primary,
-  },
-  instantRepairSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-    marginTop: 3,
-  },
-  onFieldBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    flexShrink: 0,
-  },
-  onFieldBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.successDark,
   },
   lookupRow: {
     flexDirection: 'row',

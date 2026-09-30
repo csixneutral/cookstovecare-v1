@@ -119,11 +119,18 @@ export const TechniciansListScreen: React.FC = () => {
       <Header
         title="Technicians"
         subtitle={`${technicians.length} registered technicians`}
-        rightAction={{
-          icon: 'refresh',
-          onPress: onRefresh,
-          color: Colors.primary,
-        }}
+        rightActions={[
+          {
+            icon: 'refresh',
+            onPress: onRefresh,
+            color: Colors.primary,
+          },
+          {
+            icon: 'account-circle',
+            onPress: () => navigation.navigate(Routes.PROFILE),
+            color: Colors.primary,
+          },
+        ]}
       />
 
       <SearchBar

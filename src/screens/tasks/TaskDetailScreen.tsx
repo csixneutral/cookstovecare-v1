@@ -23,11 +23,6 @@ import { uploadApi } from '../../services/uploadApi';
 import { useAuth } from '../../context/AuthContext';
 import { TaskDto, TaskStatus, UserRole, RepairDataDto } from '../../types';
 import { MaterialIcons } from '@expo/vector-icons';
-import {
-  isInstantRepairTask,
-  applyInstantTaskOverride,
-  saveInstantTaskOverride,
-} from '../../utils/taskUtils';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, Routes } from '../../constants/routes';
 
@@ -42,6 +37,13 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [previewIsSignature, setPreviewIsSignature] = useState(false);
+
+  const openPreview = (url: string | null | undefined, isSignature: boolean = false) => {
+    if (!url) return;
+    setPreviewIsSignature(isSignature);
+    setPreviewImageUrl(url);
+  };
 
   // Distribution closure modal state
   const [showDistributeModal, setShowDistributeModal] = useState(false);
@@ -56,23 +58,15 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [isDistributing, setIsDistributing] = useState(false);
   const [repairData, setRepairData] = useState<RepairDataDto | null>(null);
 
-  const isInstant = isInstantRepairTask(task);
   const isReplacement = task?.typeOfProcess === 'REPLACEMENT';
   const role = session?.role;
 
   const loadTask = useCallback(async () => {
     try {
       const data = await taskApi.getTaskById(taskId);
-      const effectiveData = applyInstantTaskOverride(data);
-      setTask(effectiveData);
-      const isInstantTask = isInstantRepairTask(effectiveData);
-      if (
-        effectiveData.temporaryCookstoveNumber &&
-        effectiveData.temporaryCookstoveNumber !== 'INSTANT_REPAIR' &&
-        effectiveData.temporaryCookstoveNumber !== 'ON_FIELD_REPAIR' &&
-        !isInstantTask
-      ) {
-        setReturnedTempNumber(effectiveData.temporaryCookstoveNumber);
+      setTask(data);
+      if (data.temporaryCookstoveNumber) {
+        setReturnedTempNumber(data.temporaryCookstoveNumber);
       } else {
         setReturnedTempNumber('');
       }
@@ -173,27 +167,12 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
         newStoveNumber: newStoveNumber.trim() || undefined,
         newStoveImageUrl: newStoveUrl,
         customerReview: customerReview.trim() || undefined,
-        returnedTempCookstoveNumber:
-          task?.temporaryCookstoveNumber &&
-          task.temporaryCookstoveNumber !== 'INSTANT_REPAIR' &&
-          task.temporaryCookstoveNumber !== 'ON_FIELD_REPAIR' &&
-          !isInstant
-            ? returnedTempNumber.trim() || undefined
-            : undefined,
+        returnedTempCookstoveNumber: task?.temporaryCookstoveNumber
+          ? returnedTempNumber.trim() || undefined
+          : undefined,
         customerSignatureUrl: signatureUrl,
         deliverySignatureUrl: signatureUrl,
       });
-
-      if (isInstant) {
-        await saveInstantTaskOverride(taskId, {
-          status: TaskStatus.DISTRIBUTED,
-          deliveredAt: Date.now(),
-          deliveryImageUrl: distUrl,
-          customerSignatureUrl: signatureUrl,
-          deliverySignatureUrl: signatureUrl,
-          customerReview: customerReview.trim() || undefined,
-        });
-      }
 
       setShowDistributeModal(false);
       Alert.alert('Delivered!', 'Order marked as delivered and closed.');
@@ -209,9 +188,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     return <LoadingSpinner message="Loading task details..." />;
   }
 
-  const cleanAddress = task.deliveryAddress
-    ? task.deliveryAddress.replace(/\s*\[INSTANT_REPAIR\]/g, '').trim()
-    : '';
+  const cleanAddress = task.deliveryAddress ? task.deliveryAddress.trim() : '';
 
   return (
     <View style={styles.container}>
@@ -228,7 +205,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <TouchableOpacity
               activeOpacity={0.9}
               style={styles.bannerTouchable}
-              onPress={() => setPreviewImageUrl(task.receivedProductImageUrl || null)}
+              onPress={() => openPreview(task.receivedProductImageUrl, false)}
             >
               <Image
                 source={{ uri: task.receivedProductImageUrl }}
@@ -248,12 +225,6 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           )}
 
           <View style={styles.bannerStatusOverlay} pointerEvents="box-none">
-            {isInstant && (
-              <View style={styles.instantDetailBadge}>
-                <MaterialIcons name="bolt" size={13} color={Colors.textWhite} />
-                <Text style={styles.instantDetailBadgeText}>Instant Repair</Text>
-              </View>
-            )}
             <StatusBadge status={task.status} />
           </View>
         </View>
@@ -264,26 +235,19 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View>
               <Text style={styles.cookstoveTitle}>{task.cookstoveNumber}</Text>
               <Text style={styles.processTypeText}>
-                Process Type: {isInstant ? 'Instant On-Field Repair' : isReplacement ? 'Replacement' : 'Repairing'}
+                Process Type: {isReplacement ? 'Replacement' : 'Repairing'}
               </Text>
             </View>
-            <View style={[styles.processIconPill, isInstant && styles.processIconPillInstant]}>
+            <View style={styles.processIconPill}>
               <MaterialIcons
-                name={isInstant ? 'bolt' : isReplacement ? 'swap-horiz' : 'build'}
+                name={isReplacement ? 'swap-horiz' : 'build'}
                 size={22}
-                color={isInstant ? '#D97706' : Colors.primary}
+                color={Colors.primary}
               />
             </View>
           </View>
 
-          {isInstant ? (
-            <View style={styles.instantOnFieldNotice}>
-              <MaterialIcons name="verified" size={16} color={Colors.success} />
-              <Text style={styles.instantOnFieldNoticeText}>
-                Repaired and serviced on-site by Field Officer. No workshop repair needed.
-              </Text>
-            </View>
-          ) : task.temporaryCookstoveNumber && task.temporaryCookstoveNumber !== 'INSTANT_REPAIR' ? (
+          {task.temporaryCookstoveNumber ? (
             <View style={styles.tempStoveBanner}>
               <MaterialIcons name="info" size={16} color="#0284C7" />
               <Text style={styles.tempStoveText}>
@@ -368,10 +332,10 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <MaterialIcons
               name="engineering"
               size={18}
-              color={isInstant ? Colors.success : Colors.primary}
+              color={Colors.primary}
             />
             <Text style={[styles.detailText, { fontWeight: '600' }]}>
-              Technician: {isInstant ? `${task.fieldOfficerName || 'Field Officer'} (On-Field)` : (task.technicianName || 'Not yet assigned')}
+              Technician: {task.technicianName || 'Not yet assigned'}
             </Text>
           </View>
         </View>
@@ -436,7 +400,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             {repairData.repairImageUrl ? (
               <TouchableOpacity
                 activeOpacity={0.88}
-                onPress={() => setPreviewImageUrl(repairData.repairImageUrl || null)}
+                onPress={() => openPreview(repairData.repairImageUrl, false)}
                 style={{ marginTop: 8 }}
               >
                 <View style={styles.proofHeaderRow}>
@@ -460,7 +424,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             {task.receivedProductImageUrl ? (
               <TouchableOpacity
                 activeOpacity={0.88}
-                onPress={() => setPreviewImageUrl(task.receivedProductImageUrl || null)}
+                onPress={() => openPreview(task.receivedProductImageUrl, false)}
                 style={{ marginVertical: 8 }}
               >
                 <View style={styles.proofHeaderRow}>
@@ -478,7 +442,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             {(task.collectionSignatureUrl || (task.customerSignatureUrl && task.status !== TaskStatus.DISTRIBUTED)) ? (
               <TouchableOpacity
                 activeOpacity={0.88}
-                onPress={() => setPreviewImageUrl(task.collectionSignatureUrl || task.customerSignatureUrl || null)}
+                onPress={() => openPreview(task.collectionSignatureUrl || task.customerSignatureUrl, true)}
                 style={{ marginTop: 8 }}
               >
                 <View style={styles.proofHeaderRow}>
@@ -502,7 +466,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             {task.distributionImageUrl ? (
               <TouchableOpacity
                 activeOpacity={0.88}
-                onPress={() => setPreviewImageUrl(task.distributionImageUrl || null)}
+                onPress={() => openPreview(task.distributionImageUrl, false)}
                 style={{ marginVertical: 8 }}
               >
                 <View style={styles.proofHeaderRow}>
@@ -536,7 +500,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             {(task.deliverySignatureUrl || task.customerSignatureUrl) ? (
               <TouchableOpacity
                 activeOpacity={0.88}
-                onPress={() => setPreviewImageUrl(task.deliverySignatureUrl || task.customerSignatureUrl || null)}
+                onPress={() => openPreview(task.deliverySignatureUrl || task.customerSignatureUrl, true)}
                 style={{ marginTop: 8 }}
               >
                 <View style={styles.proofHeaderRow}>
@@ -555,48 +519,8 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
         {/* Dynamic Action Buttons Based on Role & Status */}
         <View style={styles.actionButtonsContainer}>
-          {/* INSTANT REPAIR - State 1: COLLECTED -> Complete On-Field Repair */}
-          {isInstant &&
-          task.status === TaskStatus.COLLECTED &&
-          (role === UserRole.FIELD_OFFICER || role === UserRole.FIELD_COORDINATOR) ? (
-            <TouchableOpacity
-              style={[styles.primaryActionButton, { backgroundColor: '#F59E0B' }]}
-              onPress={() => navigation.navigate(Routes.REPAIR_FORM, { taskId: task.id })}
-            >
-              <MaterialIcons name="build" size={20} color={Colors.textWhite} />
-              <Text style={styles.primaryActionText}>Complete On-Field Repair</Text>
-            </TouchableOpacity>
-          ) : null}
-
-          {/* INSTANT REPAIR - State 2: REPAIR_COMPLETED -> Complete Customer Delivery */}
-          {isInstant &&
-          task.status === TaskStatus.REPAIR_COMPLETED &&
-          (role === UserRole.FIELD_OFFICER || role === UserRole.FIELD_COORDINATOR) ? (
-            <TouchableOpacity
-              style={[styles.primaryActionButton, { backgroundColor: Colors.success }]}
-              onPress={() => setShowDistributeModal(true)}
-            >
-              <MaterialIcons name="local-shipping" size={22} color={Colors.textWhite} />
-              <Text style={styles.primaryActionText}>Complete Customer Delivery</Text>
-            </TouchableOpacity>
-          ) : null}
-
-          {/* INSTANT REPAIR - State 3: DISTRIBUTED -> Finished Notice */}
-          {isInstant && task.status === TaskStatus.DISTRIBUTED ? (
-            <View style={styles.instantDoneCard}>
-              <MaterialIcons name="check-circle" size={26} color={Colors.success} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.instantDoneTitle}>On-Field Repair & Delivery Completed</Text>
-                <Text style={styles.instantDoneSub}>
-                  This cookstove was serviced and delivered on-site by {task.fieldOfficerName || 'Field Officer'}.
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
-          {/* STANDARD WORKSHOP REPAIR - Supervisor Action */}
-          {!isInstant &&
-          role === UserRole.SUPERVISOR &&
+          {/* Supervisor Action */}
+          {role === UserRole.SUPERVISOR &&
           (task.status === TaskStatus.COLLECTED || task.status === TaskStatus.ASSIGNED) ? (
             <TouchableOpacity
               style={styles.primaryActionButton}
@@ -609,8 +533,8 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             </TouchableOpacity>
           ) : null}
 
-          {/* STANDARD WORKSHOP REPAIR - Technician Actions */}
-          {!isInstant && role === UserRole.TECHNICIAN ? (
+          {/* Technician Actions */}
+          {role === UserRole.TECHNICIAN ? (
             <>
               {task.status === TaskStatus.ASSIGNED ? (
                 <TouchableOpacity
@@ -649,9 +573,8 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             </>
           ) : null}
 
-          {/* STANDARD WORKSHOP REPAIR - Field Officer: Complete Distribution */}
-          {!isInstant &&
-          role === UserRole.FIELD_OFFICER &&
+          {/* Field Officer: Complete Distribution */}
+          {role === UserRole.FIELD_OFFICER &&
           (task.status === TaskStatus.REPAIR_COMPLETED ||
             task.status === TaskStatus.REPLACEMENT_COMPLETED) ? (
             <TouchableOpacity
@@ -709,21 +632,22 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                       margin: 0;
                       padding: 0;
                       height: 100%;
-                      background-color: #FFFFFF;
+                      background-color: #FFFFFF !important;
                     }
                     .m-signature-pad--body {
                       border: none;
                       border-radius: 14px;
-                      background-color: #FFFFFF;
+                      background-color: #FFFFFF !important;
                     }
                     .m-signature-pad--footer {
                       display: none;
                     }
                     body, html {
-                      background-color: #FFFFFF;
+                      background-color: #FFFFFF !important;
                       margin: 0;
                       padding: 0;
                       height: 100%;
+                      width: 100%;
                     }
                   `}
                 />
@@ -793,10 +717,7 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 ) : null}
 
                 {/* Return of temporary cookstove (visible only if a temporary cookstove was provided) */}
-                {task.temporaryCookstoveNumber &&
-                task.temporaryCookstoveNumber !== 'INSTANT_REPAIR' &&
-                task.temporaryCookstoveNumber !== 'ON_FIELD_REPAIR' &&
-                !isInstant ? (
+                {task.temporaryCookstoveNumber ? (
                   <>
                     <Text style={styles.modalInputLabel}>
                       Returned Temporary Cookstove Number
@@ -907,18 +828,53 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Full Screen Image with tap to dismiss */}
+          {/* Full Screen Image or Signature Preview Modal with tap to dismiss */}
           <TouchableOpacity
             style={styles.imageViewerContent}
             activeOpacity={1}
             onPress={() => setPreviewImageUrl(null)}
           >
             {previewImageUrl ? (
-              <Image
-                source={{ uri: previewImageUrl }}
-                style={styles.fullScreenImage}
-                resizeMode="contain"
-              />
+              (previewIsSignature ||
+                (typeof previewImageUrl === 'string' &&
+                  (previewImageUrl.toLowerCase().includes('signature') ||
+                    previewImageUrl.startsWith('data:image')))) ? (
+                <View
+                  style={styles.signaturePreviewModalCard}
+                  onStartShouldSetResponder={() => true}
+                >
+                  <View style={styles.signaturePreviewHeader}>
+                    <View style={styles.signatureBadgeRow}>
+                      <MaterialIcons name="draw" size={20} color={Colors.primary} />
+                      <Text style={styles.signaturePreviewModalTitle}>
+                        Beneficiary Signature
+                      </Text>
+                    </View>
+                    <View style={styles.signatureVerifiedTag}>
+                      <MaterialIcons name="verified" size={14} color={Colors.success} />
+                      <Text style={styles.signatureVerifiedText}>Verified</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.signaturePaperBox}>
+                    <Image
+                      source={{ uri: previewImageUrl }}
+                      style={styles.signatureModalImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+
+                  <Text style={styles.signaturePreviewHint}>
+                    Tap outside or close button to dismiss
+                  </Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: previewImageUrl }}
+                  style={styles.fullScreenImage}
+                  resizeMode="contain"
+                />
+              )
             ) : null}
           </TouchableOpacity>
         </View>
@@ -986,20 +942,6 @@ const styles = StyleSheet.create({
     top: 12,
     right: 12,
   },
-  instantDetailBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#059669',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    gap: 4,
-  },
-  instantDetailBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textWhite,
-  },
   card: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
@@ -1032,47 +974,6 @@ const styles = StyleSheet.create({
     backgroundColor: `${Colors.primary}12`,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  processIconPillInstant: {
-    backgroundColor: '#FEF3C7',
-  },
-  instantOnFieldNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    padding: 10,
-    borderRadius: 10,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    gap: 8,
-  },
-  instantOnFieldNoticeText: {
-    fontSize: 12,
-    color: '#047857',
-    fontWeight: '600',
-    flex: 1,
-  },
-  instantDoneCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1.5,
-    borderColor: '#86EFAC',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-  },
-  instantDoneTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#15803D',
-  },
-  instantDoneSub: {
-    fontSize: 12,
-    color: '#166534',
-    marginTop: 2,
-    lineHeight: 17,
   },
   tempStoveBanner: {
     flexDirection: 'row',
@@ -1400,6 +1301,68 @@ const styles = StyleSheet.create({
   fullScreenImage: {
     width: '100%',
     height: '80%',
+  },
+  signaturePreviewModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '92%',
+    maxWidth: 480,
+    alignItems: 'center',
+    ...Shadows.lg,
+  },
+  signaturePreviewHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  signatureBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  signaturePreviewModalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  signatureVerifiedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  signatureVerifiedText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.successDark,
+  },
+  signaturePaperBox: {
+    width: '100%',
+    height: 240,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
+  signatureModalImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  signaturePreviewHint: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 10,
   },
   modalButtonsRow: {
     flexDirection: 'row',

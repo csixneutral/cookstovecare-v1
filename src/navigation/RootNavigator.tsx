@@ -26,6 +26,7 @@ import { TechnicianDetailScreen } from '../screens/supervisor/TechnicianDetailSc
 import { CreateTechnicianScreen } from '../screens/supervisor/CreateTechnicianScreen';
 import { EditTechnicianScreen } from '../screens/supervisor/EditTechnicianScreen';
 import { FieldOfficerDetailScreen } from '../screens/coordinator/FieldOfficerDetailScreen';
+import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -105,6 +106,11 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen
               name={Routes.FIELD_OFFICER_DETAIL}
               component={FieldOfficerDetailScreen}
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
+              name={Routes.PROFILE}
+              component={ProfileScreen}
               options={{ presentation: 'card' }}
             />
             <Stack.Screen

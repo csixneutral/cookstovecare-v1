@@ -10,7 +10,6 @@ import { Colors, Shadows } from '../../constants/theme';
 import { TaskDto } from '../../types';
 import { StatusBadge } from './StatusBadge';
 import { MaterialIcons } from '@expo/vector-icons';
-import { isInstantRepairTask, applyInstantTaskOverride } from '../../utils/taskUtils';
 
 interface TaskCardProps {
   task: TaskDto;
@@ -39,8 +38,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   showProcessType = true,
   showDate = true,
 }) => {
-  const displayTask = applyInstantTaskOverride(task);
-  const isInstant = isInstantRepairTask(displayTask);
   const dateValue = task.collectionDate || task.createdAt;
   let formattedDate = '';
   if (dateValue) {
@@ -57,9 +54,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   }
 
   const isReplacement = String(task.typeOfProcess || '').toUpperCase().includes('REPLACE');
-  const cleanAddress = task.deliveryAddress
-    ? task.deliveryAddress.replace(/\s*\[INSTANT_REPAIR\]/g, '').trim()
-    : '';
+  const cleanAddress = task.deliveryAddress ? task.deliveryAddress.trim() : '';
 
   const handlePress = () => {
     if (isDeleteActive) {
@@ -87,7 +82,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       delayLongPress={350}
       style={[
         styles.card,
-        isInstant && styles.cardInstant,
         isDeleteActive && styles.cardActiveDelete,
       ]}
     >
@@ -104,15 +98,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               {task.cookstoveNumber}
             </Text>
           </View>
-          {isInstant && (
-            <View style={styles.instantBadge}>
-              <MaterialIcons name="bolt" size={13} color="#D97706" />
-              <Text style={styles.instantBadgeText}>Instant Repair</Text>
-            </View>
-          )}
         </View>
 
-        <StatusBadge status={displayTask.status} size="sm" />
+        <StatusBadge status={task.status} size="sm" />
       </View>
 
       <View style={styles.bodyRow}>
@@ -168,14 +156,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {(showProcessType || showDate) && (
             <View style={styles.bottomMetaRow}>
               {showProcessType && (
-                <View style={[styles.processContainer, isInstant && styles.processContainerInstant]}>
+                <View style={styles.processContainer}>
                   <MaterialIcons
-                    name={isInstant ? 'bolt' : isReplacement ? 'autorenew' : 'build'}
+                    name={isReplacement ? 'autorenew' : 'build'}
                     size={12}
-                    color={isInstant ? '#D97706' : Colors.textMuted}
+                    color={Colors.textMuted}
                   />
-                  <Text style={[styles.processText, isInstant && styles.processTextInstant]}>
-                    {isInstant ? 'Instant / On-Field' : isReplacement ? 'Replacement' : 'Repairing'}
+                  <Text style={styles.processText}>
+                    {isReplacement ? 'Replacement' : 'Repairing'}
                   </Text>
                 </View>
               )}
@@ -307,10 +295,6 @@ const styles = StyleSheet.create({
     marginVertical: 0,
     marginHorizontal: 0,
   },
-  cardInstant: {
-    borderLeftWidth: 3.5,
-    borderLeftColor: '#F59E0B',
-  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -322,46 +306,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexShrink: 1,
     gap: 6,
-  },
-  instantBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    gap: 3,
-  },
-  instantBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#B45309',
-  },
-  instantStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    gap: 4,
-  },
-  instantStatusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.success,
-  },
-  processContainerInstant: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
-  },
-  processTextInstant: {
-    color: '#B45309',
-    fontWeight: '600',
   },
   stoveNumberBadge: {
     flexDirection: 'row',

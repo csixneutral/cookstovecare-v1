@@ -13,9 +13,15 @@ import { RootStackParamList, Routes } from '../constants/routes';
 const Tab = createBottomTabNavigator();
 const DummyCenterScreen = () => null;
 
-const AllOrdersScreen: React.FC = () => <FieldOfficerDashboard initialFilter="ALL" />;
-const ReadyDeliveriesScreen: React.FC = () => <FieldOfficerDashboard initialFilter="READY" />;
-const DeliveredOrdersScreen: React.FC = () => <FieldOfficerDashboard initialFilter="DELIVERED" />;
+const AllOrdersScreen: React.FC = () => (
+  <FieldOfficerDashboard initialFilter="ALL" title="Field Operations" showFilterButton={true} />
+);
+const ReadyDeliveriesScreen: React.FC = () => (
+  <FieldOfficerDashboard initialFilter="READY" title="Deliveries" showFilterButton={false} />
+);
+const DeliveredOrdersScreen: React.FC = () => (
+  <FieldOfficerDashboard initialFilter="DELIVERED" title="Delivered Orders" showFilterButton={false} />
+);
 
 export const FieldOfficerTabs: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

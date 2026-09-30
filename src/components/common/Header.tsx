@@ -13,6 +13,11 @@ interface HeaderProps {
     onPress: () => void;
     color?: string;
   };
+  rightActions?: Array<{
+    icon: keyof typeof MaterialIcons.glyphMap;
+    onPress: () => void;
+    color?: string;
+  }>;
   isModal?: boolean;
 }
 
@@ -21,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   subtitle,
   onBack,
   rightAction,
+  rightActions,
   isModal = false,
 }) => {
   const insets = useSafeAreaInsets();
@@ -50,7 +56,24 @@ export const Header: React.FC<HeaderProps> = ({
           ) : null}
         </View>
 
-        {rightAction ? (
+        {rightActions && rightActions.length > 0 ? (
+          <View style={styles.rightActionsRow}>
+            {rightActions.map((action, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.rightButton}
+                onPress={action.onPress}
+                hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+              >
+                <MaterialIcons
+                  name={action.icon}
+                  size={24}
+                  color={action.color || Colors.primary}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : rightAction ? (
           <TouchableOpacity
             style={styles.rightButton}
             onPress={rightAction.onPress}
@@ -112,5 +135,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
+  },
+  rightActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
 });

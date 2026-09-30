@@ -41,23 +41,27 @@ export const SignaturePadModal: React.FC<SignaturePadModalProps> = ({
   const style = `
     .m-signature-pad {
       box-shadow: none;
-      border: 1px solid #E2E8F0;
+      border: 1.5px dashed #94A3B8;
       border-radius: 12px;
       margin: 0;
       padding: 0;
       height: 100%;
+      background-color: #FFFFFF !important;
     }
     .m-signature-pad--body {
       border: none;
       border-radius: 12px;
+      background-color: #FFFFFF !important;
     }
     .m-signature-pad--footer {
       display: none;
     }
     body, html {
-      background-color: transparent;
+      background-color: #FFFFFF !important;
       margin: 0;
       padding: 0;
+      height: 100%;
+      width: 100%;
     }
   `;
 
@@ -86,6 +90,7 @@ export const SignaturePadModal: React.FC<SignaturePadModalProps> = ({
                 autoClear={false}
                 imageType="image/png"
                 penColor="#000000"
+                backgroundColor="#FFFFFF"
               />
             </View>
 

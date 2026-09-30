@@ -20,7 +20,6 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, Routes } from '../../constants/routes';
 
 import { UserRole } from '../../types';
-import { saveInstantTaskOverride } from '../../utils/taskUtils';
 
 type Props = NativeStackScreenProps<RootStackParamList, typeof Routes.REPAIR_FORM>;
 
@@ -124,14 +123,6 @@ export const RepairFormScreen: React.FC<Props> = ({ navigation, route }) => {
         repairCompletionDate: Date.now(),
       });
 
-      // Synchronize instant task override cache for on-field repair
-      try {
-        await saveInstantTaskOverride(taskId, {
-          status: 'REPAIR_COMPLETED',
-          repairNotes: selectedTypes.join(', ') || 'On-field repair completed',
-          repairedAt: Date.now(),
-        });
-      } catch {}
 
       Alert.alert('Success', 'Repair details saved successfully! Order marked as Repair Completed.', [
         { text: 'OK', onPress: () => navigation.goBack() },
