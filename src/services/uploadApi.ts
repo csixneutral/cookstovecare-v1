@@ -1,12 +1,12 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { API_BASE_URL } from './apiClient';
+import { firebaseConfig, firebaseStoragePath } from '../config/firebase';
+import { getUserFacingError } from '../utils/userFacingError';
 
 export type ImageUploadType =
   | 'received'
   | 'received_product'
   | 'distribution'
   | 'repair'
-  | 'before_repair'
   | 'after_repair'
   | 'replacement_old'
   | 'old_cookstove'
@@ -15,31 +15,116 @@ export type ImageUploadType =
   | 'signature'
   | 'profile';
 
-const mapUploadType = (type: ImageUploadType): string => {
+const mapStorageFolder = (type: ImageUploadType): string => {
   switch (type) {
     case 'received':
     case 'received_product':
-      return 'received_product';
+      return firebaseStoragePath.receivedProduct;
     case 'distribution':
-      return 'distribution';
+      return firebaseStoragePath.distribution;
     case 'repair':
-    case 'before_repair':
-      return 'before_repair';
     case 'after_repair':
-      return 'after_repair';
+      return firebaseStoragePath.afterRepair;
     case 'replacement_old':
     case 'old_cookstove':
-      return 'old_cookstove';
+      return firebaseStoragePath.oldCookstove;
     case 'replacement_new':
     case 'new_cookstove':
-      return 'new_cookstove';
+      return firebaseStoragePath.newCookstove;
     case 'signature':
-      return 'signature';
+      return firebaseStoragePath.signature;
     case 'profile':
-      return 'profile';
+      return firebaseStoragePath.profile;
     default:
-      return 'received_product';
+      return firebaseStoragePath.receivedProduct;
   }
+};
+
+const extensionFromUri = (uri: string): string => {
+  if (uri.includes('.png') || uri.startsWith('data:image/png')) return 'png';
+  if (uri.includes('.webp') || uri.startsWith('data:image/webp')) return 'webp';
+  if (uri.includes('.gif') || uri.startsWith('data:image/gif')) return 'gif';
+  return 'jpg';
+};
+
+const contentTypeForExt = (ext: string): string => {
+  switch (ext) {
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    default:
+      return 'image/jpeg';
+  }
+};
+
+/** Ensure we have a local file path Expo FileSystem can upload (handles data: URIs). */
+const ensureLocalFileUri = async (
+  uri: string
+): Promise<{ localUri: string; ext: string; cleanup?: string }> => {
+  if (uri.startsWith('data:')) {
+    const commaIndex = uri.indexOf(',');
+    const header = uri.slice(0, Math.max(commaIndex, 0));
+    const base64 = commaIndex !== -1 ? uri.slice(commaIndex + 1) : uri;
+    const ext = header.includes('image/png') ? 'png' : extensionFromUri(uri);
+    const tempPath = `${FileSystem.cacheDirectory}firebase_upload_${Date.now()}.${ext}`;
+    await FileSystem.writeAsStringAsync(tempPath, base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return { localUri: tempPath, ext, cleanup: tempPath };
+  }
+
+  return { localUri: uri, ext: extensionFromUri(uri) };
+};
+
+const buildDownloadUrl = (objectPath: string, downloadToken: string): string => {
+  const bucket = firebaseConfig.storageBucket;
+  const encodedPath = encodeURIComponent(objectPath);
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media&token=${downloadToken}`;
+};
+
+/**
+ * Upload via Firebase Storage REST + Expo FileSystem.
+ * Avoids Firebase JS SDK Blob/ArrayBuffer issues on React Native.
+ */
+const uploadLocalFileToFirebase = async (
+  localUri: string,
+  objectPath: string,
+  contentType: string
+): Promise<string> => {
+  const bucket = firebaseConfig.storageBucket;
+  const uploadUrl =
+    `https://firebasestorage.googleapis.com/v0/b/${bucket}/o` +
+    `?uploadType=media&name=${encodeURIComponent(objectPath)}`;
+
+  const result = await FileSystem.uploadAsync(uploadUrl, localUri, {
+    httpMethod: 'POST',
+    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+    headers: {
+      'Content-Type': contentType,
+    },
+  });
+
+  let data: any;
+  try {
+    data = JSON.parse(result.body);
+  } catch {
+    throw new Error(`Upload server responded with non-JSON (HTTP ${result.status})`);
+  }
+
+  if (result.status < 200 || result.status >= 300) {
+    const code = data?.error?.message || data?.error || `HTTP ${result.status}`;
+    throw Object.assign(new Error(String(code)), { code: data?.error?.status || code });
+  }
+
+  const token = data?.downloadTokens;
+  if (!token) {
+    throw new Error('Upload succeeded but no download token was returned');
+  }
+
+  return buildDownloadUrl(objectPath, token);
 };
 
 export const uploadApi = {
@@ -49,75 +134,44 @@ export const uploadApi = {
     taskId?: number,
     userId?: number
   ): Promise<string> => {
-    // If the image is already a hosted HTTP/HTTPS url, return it directly
+    // Already a hosted URL — keep as-is (legacy server or Firebase)
     if (fileUri.startsWith('http://') || fileUri.startsWith('https://')) {
       return fileUri;
     }
 
-    let uploadTargetUri = fileUri;
-    let tempFilePath: string | null = null;
+    let cleanupPath: string | undefined;
 
     try {
-      // If it is a base64 data URI (e.g. from signature canvas)
-      if (fileUri.startsWith('data:')) {
-        const commaIndex = fileUri.indexOf(',');
-        const base64Data = commaIndex !== -1 ? fileUri.slice(commaIndex + 1) : fileUri;
-        const isPng = fileUri.startsWith('data:image/png');
-        const ext = isPng ? 'png' : 'jpg';
-        tempFilePath = `${FileSystem.cacheDirectory}upload_${Date.now()}.${ext}`;
+      const prepared = await ensureLocalFileUri(fileUri);
+      cleanupPath = prepared.cleanup;
 
-        await FileSystem.writeAsStringAsync(tempFilePath, base64Data, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        uploadTargetUri = tempFilePath;
-      }
+      const folder = mapStorageFolder(imageType);
+      // Koshal/cookstovecare/{type}/{id}.{ext}
+      const idParts: string[] = [];
+      if (taskId) idParts.push(`task${taskId}`);
+      if (userId) idParts.push(`user${userId}`);
+      idParts.push(`${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
+      const fileId = idParts.join('_');
+      const objectPath = `${folder}/${fileId}.${prepared.ext}`;
 
-      const uploadUrl = `${API_BASE_URL}/upload/image.php`;
-      const serverType = mapUploadType(imageType);
-
-      const response = await FileSystem.uploadAsync(uploadUrl, uploadTargetUri, {
-        fieldName: 'image',
-        httpMethod: 'POST',
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        parameters: {
-          type: serverType,
-          ...(taskId ? { task_id: String(taskId) } : {}),
-          ...(userId ? { user_id: String(userId) } : {}),
-        },
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-
-      let data: any;
-      try {
-        data = JSON.parse(response.body);
-      } catch {
-        if (response.status !== 200) {
-          throw new Error(`Upload server error (HTTP ${response.status})`);
-        }
-        throw new Error(`Upload server responded with non-JSON: ${response.body.slice(0, 100)}`);
-      }
-
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(data.error || data.message || `Upload failed with status ${response.status}`);
-      }
-
-      if (!data.success || !data.url) {
-        throw new Error(data.error || 'Image upload failed');
-      }
-
-      return data.url;
+      return await uploadLocalFileToFirebase(
+        prepared.localUri,
+        objectPath,
+        contentTypeForExt(prepared.ext)
+      );
+    } catch (error) {
+      console.warn('Firebase image upload failed', error);
+      throw new Error(
+        getUserFacingError(error, 'Unable to upload photo. Please check your connection and try again.')
+      );
     } finally {
-      // Clean up temporary cache file if one was created
-      if (tempFilePath) {
+      if (cleanupPath) {
         try {
-          await FileSystem.deleteAsync(tempFilePath, { idempotent: true });
+          await FileSystem.deleteAsync(cleanupPath, { idempotent: true });
         } catch {
-          // Ignore cleanup errors
+          // ignore cleanup errors
         }
       }
     }
   },
 };
-

@@ -25,6 +25,7 @@ import { TaskDto, TaskStatus, UserRole, RepairDataDto } from '../../types';
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, Routes } from '../../constants/routes';
+import { getUserFacingError } from '../../utils/userFacingError';
 
 type Props = NativeStackScreenProps<RootStackParamList, typeof Routes.TASK_DETAIL>;
 
@@ -177,8 +178,11 @@ export const TaskDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       setShowDistributeModal(false);
       Alert.alert('Delivered!', 'Order marked as delivered and closed.');
       await loadTask();
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to complete distribution');
+    } catch (e: unknown) {
+      Alert.alert(
+        'Failed',
+        getUserFacingError(e, 'Failed to complete distribution. Please try again.')
+      );
     } finally {
       setIsDistributing(false);
     }

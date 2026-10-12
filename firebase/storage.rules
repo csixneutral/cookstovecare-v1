@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// Paste into Firebase Console → Storage → Rules → Publish
+//
+// Object path:
+//   Koshal/cookstovecare/{type}/{id}.jpg
+// Folder name must be exactly "Koshal" (capital K) to match existing storage.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /Koshal/cookstovecare/{type}/{fileName} {
+      allow read: if true;
+
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && type in [
+                     'received_product',
+                     'distribution',
+                     'after_repair',
+                     'old_cookstove',
+                     'new_cookstove',
+                     'signature',
+                     'profile'
+                   ]
+                   && fileName.matches('^[A-Za-z0-9._-]+\\.(jpg|jpeg|png|gif|webp)$');
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

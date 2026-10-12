@@ -18,7 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, Routes } from '../../constants/routes';
-
+import { getUserFacingError } from '../../utils/userFacingError';
 import { UserRole } from '../../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, typeof Routes.REPAIR_FORM>;
@@ -108,7 +108,7 @@ export const RepairFormScreen: React.FC<Props> = ({ navigation, route }) => {
       if (repairImageUri) {
         uploadedPhotoUrl = await uploadApi.uploadImage(
           repairImageUri,
-          'repair',
+          'after_repair',
           taskId,
           session?.userId
         );
@@ -127,8 +127,11 @@ export const RepairFormScreen: React.FC<Props> = ({ navigation, route }) => {
       Alert.alert('Success', 'Repair details saved successfully! Order marked as Repair Completed.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to save repair completion');
+    } catch (e: unknown) {
+      Alert.alert(
+        'Failed',
+        getUserFacingError(e, 'Failed to save repair completion. Please try again.')
+      );
     } finally {
       setIsSubmitting(false);
     }

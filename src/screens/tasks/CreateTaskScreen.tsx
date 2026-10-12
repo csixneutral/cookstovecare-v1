@@ -26,6 +26,7 @@ import { FieldOfficerDto, UserRole, CookstoveLookupData } from '../../types';
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, Routes } from '../../constants/routes';
+import { getUserFacingError } from '../../utils/userFacingError';
 
 type Props = NativeStackScreenProps<RootStackParamList, typeof Routes.CREATE_TASK>;
 
@@ -237,8 +238,11 @@ export const CreateTaskScreen: React.FC<Props> = ({ navigation, route }) => {
           onPress: () => navigation.goBack(),
         },
       ]);
-    } catch (error: any) {
-      Alert.alert('Failed', error.message || 'Unable to create order. Please try again.');
+    } catch (error: unknown) {
+      Alert.alert(
+        'Failed',
+        getUserFacingError(error, 'Unable to create order. Please try again.')
+      );
     } finally {
       setIsSubmitting(false);
     }

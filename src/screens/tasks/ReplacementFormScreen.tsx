@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, Routes } from '../../constants/routes';
+import { getUserFacingError } from '../../utils/userFacingError';
 import { UserRole } from '../../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, typeof Routes.REPLACEMENT_FORM>;
@@ -101,8 +102,11 @@ export const ReplacementFormScreen: React.FC<Props> = ({ navigation, route }) =>
         'Replacement recorded successfully! Order marked as Replacement Completed.',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to save replacement');
+    } catch (e: unknown) {
+      Alert.alert(
+        'Failed',
+        getUserFacingError(e, 'Failed to save replacement. Please try again.')
+      );
     } finally {
       setIsSubmitting(false);
     }
