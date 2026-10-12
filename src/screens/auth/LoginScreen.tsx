@@ -42,7 +42,14 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       await login(phoneNumber.trim(), password.trim());
       // Navigation is automatically handled by RootNavigator observing session state
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Invalid credentials. Please try again.');
+      const rawMessage = typeof error?.message === 'string' ? error.message : '';
+      const message =
+        rawMessage === 'invalid_credentials' || !rawMessage
+          ? 'Incorrect phone number or password. Please try again.'
+          : rawMessage.includes('_')
+            ? 'Unable to sign in. Please check your details and try again.'
+            : rawMessage;
+      Alert.alert('Login Failed', message);
     } finally {
       setIsLoading(false);
     }
